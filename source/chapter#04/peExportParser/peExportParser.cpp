@@ -1,63 +1,96 @@
-﻿/**
- * peExportParser.cpp
- * Windows APT Warfare
- * by aaaddress1@chroot.org
- */
-#include <iostream>
+﻿#include <iostream>
 #include <windows.h>
-#pragma warning(disable:4996)
+#pragma warning(disable : 4996)
 #define getNtHdr(buf) ((IMAGE_NT_HEADERS *)((size_t)buf + ((IMAGE_DOS_HEADER *)buf)->e_lfanew))
 #define getSectionArr(buf) ((IMAGE_SECTION_HEADER *)((size_t)buf + ((IMAGE_DOS_HEADER *)buf)->e_lfanew + sizeof(IMAGE_NT_HEADERS)))
 
-bool readBinFile(const char fileName[], char** bufPtr, size_t& length)
+BOOL ReadBinFile(const char* fileName, char*& buffer, DWORD& size)
 {
-	if (FILE* fp = fopen(fileName, "rb"))
+	// Open file
+	FILE* fp = nullptr;
+	if (fopen_s(&fp, fileName, "rb"))
 	{
-		fseek(fp, 0, SEEK_END);
-		length = ftell(fp);
-		*bufPtr = new char[length + 1];
-		fseek(fp, 0, SEEK_SET);
-		fread(*bufPtr, sizeof(char), length, fp);
-		return true;
+		return false;
 	}
 	else
-		return false;
+	{
+		// Get the size of the binary file
+		fseek(fp, 0, SEEK_END);
+		size = ftell(fp);
+		fseek(fp, 0, SEEK_SET);
+
+		// Get the content of the binary file
+		buffer = new char[size];
+		if (buffer == nullptr)
+		{
+			fclose(fp);
+			return false;
+		}
+		fread(buffer, sizeof(char), size, fp);
+
+		// finalization
+		fclose(fp);
+		return true;
+	}
 }
 
-size_t rvaToOffset(char* exeData, size_t RVA) {
-	for (size_t i = 0; i < getNtHdr(exeData)->FileHeader.NumberOfSections; i++) {
-		auto currSection = getSectionArr(exeData)[i];
-		if (RVA >= currSection.VirtualAddress &&
-			RVA <= currSection.VirtualAddress + currSection.Misc.VirtualSize)
-			return currSection.PointerToRawData + (RVA - currSection.VirtualAddress);
+size_t RvaToOffset(char* ExeData, size_t RVA)
+{
+	for (size_t i = 0; i < getNtHdr(ExeData)->FileHeader.NumberOfSections; i++)
+	{
+		auto CurrSection = getSectionArr(ExeData)[i];
+		if (RVA >= CurrSection.VirtualAddress &&
+			RVA <= CurrSection.VirtualAddress + CurrSection.Misc.VirtualSize)
+			return CurrSection.PointerToRawData + (RVA - CurrSection.VirtualAddress);
 	}
 	return 0;
 }
 
-int main(int argc, char**argv)
+
+void ExportParser(char* filename)
 {
-	if (argc != 2) {
-		puts("usage: ./peExportParser [path/to/dll]");
-		return 0;
-	}
-	char* exeBuf; size_t exeSize;
-	if (readBinFile(argv[1], &exeBuf, exeSize))
+	char* Buffer;
+	DWORD Size;
+
+	if (ReadBinFile(filename, Buffer, Size))
 	{
-		// lookup RVA of PIMAGE_EXPORT_DIRECTORY (from DataDirectory)
-		IMAGE_OPTIONAL_HEADER optHdr = getNtHdr(exeBuf)->OptionalHeader;
+		// Lookup RVA of PIMAGE_EXPORT_DIRECTORY (from DataDirectory)
+		IMAGE_OPTIONAL_HEADER optHdr = getNtHdr(Buffer)->OptionalHeader;
 		IMAGE_DATA_DIRECTORY dataDir_exportDir = optHdr.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-		size_t offset_exportDir = rvaToOffset(exeBuf, dataDir_exportDir.VirtualAddress);
+		size_t offset_exportDir = RvaToOffset(Buffer, dataDir_exportDir.VirtualAddress);
 
 		// Parse IMAGE_EXPORT_DIRECTORY struct
-		PIMAGE_EXPORT_DIRECTORY exportTable = (PIMAGE_EXPORT_DIRECTORY)(exeBuf + offset_exportDir);
-		printf("[+] detect module : %s\n", exeBuf + rvaToOffset(exeBuf, exportTable->Name));
+		PIMAGE_EXPORT_DIRECTORY exportTable = (PIMAGE_EXPORT_DIRECTORY)(Buffer + offset_exportDir);
+		printf("[+] Detect module : %s\n", Buffer + RvaToOffset(Buffer, exportTable->Name));
 
-		// Enumerate Exported Function Name
-		printf("[+] list exported functions (total %i api):\n", exportTable->NumberOfNames);
-		uint32_t* arr_rvaOfNames = (uint32_t*)(exeBuf + rvaToOffset(exeBuf, exportTable->AddressOfNames));
+		// Enumerate Exported Functions
+		printf("[+] List exported functions (total %i api):\n", exportTable->NumberOfNames);
+		uint32_t* arr_rvaOfFunctions = (uint32_t*)(Buffer + RvaToOffset(Buffer, exportTable->AddressOfFunctions));
+		uint32_t* arr_rvaOfNames = (uint32_t*)(Buffer + RvaToOffset(Buffer, exportTable->AddressOfNames));
+		uint16_t* arr_rvaOfNameOrdinals = (uint16_t*)(Buffer + RvaToOffset(Buffer, exportTable->AddressOfNameOrdinals));
 		for (size_t i = 0; i < exportTable->NumberOfNames; i++)
-			printf("\t#%.2i - %s\n", i, exeBuf + rvaToOffset(exeBuf, arr_rvaOfNames[i]));
+		{
+			// list all rvaOfFunctions, rvaOfNames, rvaOfNameOrdinals
+			printf("\t#%.2x: %s\n", i, Buffer + RvaToOffset(Buffer, arr_rvaOfNames[i]));
+			printf("\t\t- AddressOfNames: %p\n", arr_rvaOfNames[i]);
+			printf("\t\t- AddressOfFunctions: %p\n", arr_rvaOfFunctions[i]);
+			printf("\t\t- AddressOfNameOrdinals: %p\n", arr_rvaOfNameOrdinals[i]);
+		}
 	}
-	else puts("[!] dll file not found.");
+	else
+		puts("[!] dll file not found.");
+}
+
+int main(int argc, char** argv)
+{
+	if (argc != 2)
+	{
+		puts("[!] Usage: .\\PEExportParser.exe [path\\to\\dll]\n");
+	}
+	else
+	{
+		ExportParser(argv[1]);
+	}
+	
 	return 0;
 }
