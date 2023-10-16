@@ -1,0 +1,13 @@
+﻿  SignatureStego.cpp
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(15,39): warning C4244: '引數': 將 'LONGLONG' 轉換為 'size_t'，由於類型不同，可能導致資料遺失
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(16,16): warning C4244: '引數': 將 'LONGLONG' 轉換為 'size_t'，由於類型不同，可能導致資料遺失
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(36,48): warning C4244: '正在初始化': 將 'LONGLONG' 轉換為 'unsigned int'，由於類型不同，可能導致資料遺失
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(37,37): warning C4244: '引數': 將 'LONGLONG' 轉換為 'size_t'，由於類型不同，可能導致資料遺失
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(43,60): warning C4244: '引數': 將 'LONGLONG' 轉換為 'size_t'，由於類型不同，可能導致資料遺失
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(44,42): warning C4244: '+=': 將 'LONGLONG' 轉換為 'DWORD'，由於類型不同，可能導致資料遺失
+D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\SignatureStego\SignatureStego.cpp(47,42): warning C4244: '引數': 將 'LONGLONG' 轉換為 'size_t'，由於類型不同，可能導致資料遺失
+  正在產生程式碼
+  Previous IPDB not found, fall back to full compilation.
+  All 6 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成程式碼產生
+  SignatureStego.vcxproj -> D:\All_In_One\AllAboutLearning\SecurityResearch\WindowsSecurityForAPT\Labs\_SignatureStego\SignatureStego\Release\SignatureStego.exe
