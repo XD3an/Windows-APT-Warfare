@@ -1,6 +1,8 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 #include <Shlwapi.h>
 #include <Windows.h>
+
+#pragma comment(lib, "shlwapi.lib")
 
 typedef struct _PEB_LDR_DATA
 {
@@ -11,14 +13,14 @@ typedef struct _PEB_LDR_DATA
     LIST_ENTRY InMemoryOrderModuleList;
     LIST_ENTRY InInitializationOrderModuleList;
     PVOID EntryInProgress;
-} PEB_LDR_DATA, *PPEB_LDR_DATA;
+} PEB_LDR_DATA, * PPEB_LDR_DATA;
 
 typedef struct _UNICODE_STRING32
 {
     USHORT Length;
     USHORT MaximumLength;
     PWSTR Buffer;
-} UNICODE_STRING32, *PUNICODE_STRING32;
+} UNICODE_STRING32, * PUNICODE_STRING32;
 
 typedef struct _PEB32
 {
@@ -40,7 +42,7 @@ typedef struct _PEB32
     ULONG SystemReserved;
     ULONG AtlThunkSListPtr32;
     ULONG ApiSetMap;
-} PEB32, *PPEB32;
+} PEB32, * PPEB32;
 
 typedef struct _PEB_LDR_DATA32
 {
@@ -51,7 +53,7 @@ typedef struct _PEB_LDR_DATA32
     LIST_ENTRY32 InMemoryOrderModuleList;
     LIST_ENTRY32 InInitializationOrderModuleList;
     ULONG EntryInProgress;
-} PEB_LDR_DATA32, *PPEB_LDR_DATA32;
+} PEB_LDR_DATA32, * PPEB_LDR_DATA32;
 
 typedef struct _LDR_DATA_TABLE_ENTRY32
 {
@@ -79,18 +81,18 @@ typedef struct _LDR_DATA_TABLE_ENTRY32
     };
     ULONG EntryPointActivationContext;
     ULONG PatchInformation;
-} LDR_DATA_TABLE_ENTRY32, *PLDR_DATA_TABLE_ENTRY32;
+} LDR_DATA_TABLE_ENTRY32, * PLDR_DATA_TABLE_ENTRY32;
 
-void renameDynModule(const wchar_t *libName)
+void renameDynModule(const wchar_t* libName)
 {
-    typedef void(WINAPI * RtlInitUnicodeString)(PUNICODE_STRING32, PCWSTR);
+    typedef void(WINAPI* RtlInitUnicodeString)(PUNICODE_STRING32, PCWSTR);
     RtlInitUnicodeString pfnRtlInitUnicodeString = (RtlInitUnicodeString)(GetProcAddress(LoadLibraryA("ntdll"), "RtlInitUnicodeString"));
 
     PPEB32 pPEB = (PPEB32)__readfsdword(0x30);
     PLIST_ENTRY header = &(pPEB->Ldr->InLoadOrderModuleList);
     for (PLIST_ENTRY curr = header->Flink; curr != header; curr = curr->Flink)
     {
-        LDR_DATA_TABLE_ENTRY32 *data = (LDR_DATA_TABLE_ENTRY32 *)curr;
+        LDR_DATA_TABLE_ENTRY32* data = (LDR_DATA_TABLE_ENTRY32*)curr;
         if (StrStrIW(libName, data->BaseDllName.Buffer))
         {
             printf("[+] disguise module %ls @ %p\n", data->BaseDllName.Buffer, data->DllBase);
@@ -101,36 +103,36 @@ void renameDynModule(const wchar_t *libName)
     }
 }
 
-void HideModule(const wchar_t *libName)
+void HideModule(const wchar_t* libName)
 {
     PPEB32 pPEB = (PPEB32)__readfsdword(0x30);
     PLIST_ENTRY header = &(pPEB->Ldr->InMemoryOrderModuleList);
     for (PLIST_ENTRY curr = header->Flink; curr != header; curr = curr->Flink)
     {
 
-        LDR_DATA_TABLE_ENTRY32 *inMem_List = CONTAINING_RECORD(
+        LDR_DATA_TABLE_ENTRY32* inMem_List = CONTAINING_RECORD(
             curr, LDR_DATA_TABLE_ENTRY32, InMemoryOrderLinks);
 
         if (StrStrIW(libName, inMem_List->BaseDllName.Buffer))
         {
             printf("[+] strip node %ls @ %p\n", libName, inMem_List->DllBase);
 
-            LIST_ENTRY32 *prev = (LIST_ENTRY32 *)inMem_List->InMemoryOrderLinks.Blink;
-            LIST_ENTRY32 *next = (LIST_ENTRY32 *)inMem_List->InMemoryOrderLinks.Flink;
+            LIST_ENTRY32* prev = (LIST_ENTRY32*)inMem_List->InMemoryOrderLinks.Blink;
+            LIST_ENTRY32* next = (LIST_ENTRY32*)inMem_List->InMemoryOrderLinks.Flink;
             if (prev)
                 prev->Flink = (DWORD)next;
             if (next)
                 next->Blink = (DWORD)prev;
 
-            prev = (LIST_ENTRY32 *)inMem_List->InLoadOrderLinks.Blink;
-            next = (LIST_ENTRY32 *)inMem_List->InLoadOrderLinks.Flink;
+            prev = (LIST_ENTRY32*)inMem_List->InLoadOrderLinks.Blink;
+            next = (LIST_ENTRY32*)inMem_List->InLoadOrderLinks.Flink;
             if (prev)
                 prev->Flink = (DWORD)next;
             if (next)
                 next->Blink = (DWORD)prev;
 
-            prev = (LIST_ENTRY32 *)inMem_List->InInitializationOrderLinks.Blink;
-            next = (LIST_ENTRY32 *)inMem_List->InInitializationOrderLinks.Flink;
+            prev = (LIST_ENTRY32*)inMem_List->InInitializationOrderLinks.Blink;
+            next = (LIST_ENTRY32*)inMem_List->InInitializationOrderLinks.Flink;
             if (prev)
                 prev->Flink = (DWORD)next;
             if (next)
